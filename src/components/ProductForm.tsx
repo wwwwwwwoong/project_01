@@ -2,17 +2,11 @@
 
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useCreateProduct, CreateProductForm } from "@/hooks/useCreateProduct";
-import { useUploadImage } from "@/hooks/useUploadImage";
+import { useCategories, Category } from "@/hooks/useCategories";
 
-interface Category {
-    id: string;
-    name: string;
-}
+export default function ProductForm() {
+    const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useCategories();
 
-interface ProductFormProps {
-    categories: Category[];
-}
-export default function ProductForm({ categories }: ProductFormProps) {
     const initialForm: CreateProductForm = {
         name: "",
         price: 0,
@@ -24,17 +18,13 @@ export default function ProductForm({ categories }: ProductFormProps) {
     const [form, setForm] = useState<CreateProductForm>(initialForm);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
-
-    const { uploadImage, loading: uploading } = useUploadImage();
 
     const createProduct = useCreateProduct({
         onSuccess: () => {
             setSuccessMessage("상품 등록 완료!");
             setErrorMessage(null);
             setForm(initialForm);
-            setImageFile(null);
             setImagePreview(undefined);
         },
         onError: (error: any) => {
@@ -43,9 +33,7 @@ export default function ProductForm({ categories }: ProductFormProps) {
         },
     });
 
-    const handleChange = (
-        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, files } = e.target as HTMLInputElement;
 
         if (name === "imageUrl" && files && files[0]) {
@@ -63,92 +51,40 @@ export default function ProductForm({ categories }: ProductFormProps) {
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-
-        let imageUrl = form.imageUrl;
-
-        if (imageFile) {
-            const uploadedUrl = await uploadImage(imageFile, "products");
-            if (!uploadedUrl) {
-                setErrorMessage("이미지 업로드 실패");
-                return;
-            }
-            imageUrl = uploadedUrl;
-        }
-
-        createProduct.mutate({ ...form, imageUrl });
+        createProduct.mutate(form);
     };
 
+    if (isCategoriesLoading) return <p>카테고리 불러오는 중...</p>;
+    if (categoriesError) return <p>카테고리 불러오기 실패: {categoriesError.message}</p>;
+
     return (
-        <form
-            onSubmit={handleSubmit}
-            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded-lg shadow space-y-4">
             <h1 className="text-2xl font-bold text-center">상품 등록</h1>
 
             {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
             {successMessage && <p className="text-green-500 text-sm">{successMessage}</p>}
 
-            <input
-                type="text"
-                name="name"
-                placeholder="상품명"
-                value={form.name || ""}
-                onChange={handleChange}
-                required
-                className="w-full border p-2 rounded"
-            />
+            <input type="text" name="name" placeholder="상품명" value={form.name || ""} onChange={handleChange} required className="w-full border p-2 rounded" />
 
-            <input
-                type="number"
-                name="price"
-                placeholder="가격을 입력하세요"
-                value={form.price}
-                onChange={handleChange}
-                min={0}
-                required
-                className="w-full border p-2 rounded"
-            />
+            <input type="number" name="price" placeholder="가격을 입력하세요" value={form.price} onChange={handleChange} min={0} required className="w-full border p-2 rounded" />
 
-            <textarea
-                name="description"
-                placeholder="상품 설명"
-                value={form.description || ""}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-            />
+            <textarea name="description" placeholder="상품 설명" value={form.description || ""} onChange={handleChange} className="w-full border p-2 rounded" />
 
-            <select
-                name="categoryId"
-                value={form.categoryId || ""}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-            >
+            <select name="categoryId" value={form.categoryId || ""} onChange={handleChange} className="w-full border p-2 rounded" required>
                 <option value="">카테고리 선택</option>
-                {categories.map(cat => (
+                {categories?.map((cat: Category) => (
                     <option key={cat.id} value={cat.id}>
                         {cat.name}
                     </option>
                 ))}
             </select>
 
-            <input
-                type="file"
-                name="imageUrl"
-                accept="image/*"
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-            />
-            {imagePreview && (
-                <img src={imagePreview} alt="미리보기" className="w-32 h-32 object-cover mt-2 rounded" />
-            )}
+            <input type="file" name="imageUrl" accept="image/*" onChange={handleChange} className="w-full border p-2 rounded" />
+            {imagePreview && <img src={imagePreview} alt="미리보기" className="w-32 h-32 object-cover mt-2 rounded" />}
 
-            <button
-                type="submit"
-                disabled={createProduct.isPending}
-                className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-            >
+            <button type="submit" disabled={createProduct.isPending} className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50">
                 {createProduct.isPending ? "등록 중..." : "상품 등록"}
             </button>
         </form>

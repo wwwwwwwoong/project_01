@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useProducts } from "@/hooks/useProducts";
 
 export default function ProductList() {
@@ -11,22 +12,24 @@ export default function ProductList() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {products?.map((product) => (
-                <div key={product.id} className="border p-4 rounded-lg shadow">
-                    {product.imageUrl && (
-                        <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="w-full h-40 object-cover mb-2 rounded"
-                        />
-                    )}
-                    <h2 className="text-lg font-bold">{product.name}</h2>
-                    <p className="text-sm text-gray-500">작성자: {product.user.name}</p>
-                    <p className="text-sm text-gray-500">
-                        카테고리: {product.category?.name || "없음"}
-                    </p>
-                    <p className="mt-2">{product.description}</p>
-                    <p className="mt-1 font-semibold">₩{product.price.toLocaleString()}</p>
-                </div>
+                <Link key={product.id} href={`/products/${product.id}`}>
+                    <div className="border p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition">
+                        {product.imageUrl && (
+                            <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="w-full h-40 object-cover mb-2 rounded"
+                            />
+                        )}
+                        <h2 className="text-lg font-bold">{product.name}</h2>
+                        <p className="text-sm text-gray-500">작성자: {product.user.name}</p>
+                        <p className="text-sm text-gray-500">
+                            카테고리: {product.category?.name || "없음"}
+                        </p>
+                        <p className="mt-2">{product.description}</p>
+                        <p className="mt-1 font-semibold">₩{product.price.toLocaleString()}</p>
+                    </div>
+                </Link>
             ))}
         </div>
     );
