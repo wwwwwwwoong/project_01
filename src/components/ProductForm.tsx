@@ -3,10 +3,11 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useCreateProduct, CreateProductForm } from "@/hooks/useCreateProduct";
 import { useCategories, Category } from "@/hooks/useCategories";
+import { useRouter } from "next/navigation";
 
 export default function ProductForm() {
     const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useCategories();
-
+    const router = useRouter();
     const initialForm: CreateProductForm = {
         name: "",
         price: 0,
@@ -26,6 +27,8 @@ export default function ProductForm() {
             setErrorMessage(null);
             setForm(initialForm);
             setImagePreview(undefined);
+
+            router.push("/products");
         },
         onError: (error: any) => {
             setErrorMessage(error.message || "상품 등록 실패");
@@ -73,7 +76,6 @@ export default function ProductForm() {
             <textarea name="description" placeholder="상품 설명" value={form.description || ""} onChange={handleChange} className="w-full border p-2 rounded" />
 
             <select name="categoryId" value={form.categoryId || ""} onChange={handleChange} className="w-full border p-2 rounded" required>
-                <option value="">카테고리 선택</option>
                 {categories?.map((cat: Category) => (
                     <option key={cat.id} value={cat.id}>
                         {cat.name}

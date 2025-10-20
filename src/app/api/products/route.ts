@@ -1,25 +1,51 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const products = await prisma.product.findMany({
-            include: {
-                user: { select: { name: true } },      // 작성자 이름
-                category: { select: { name: true } },  // 카테고리 이름
+        const { searchParams } = req.nextUrl;
+
+        const keyword = searchParams.get("keyword")?.trim() || "";
+        const categoryId = searchParams.get("categoryId")?.trim() || "";
+        const page = Number(searchParams.get("page") || 1);
+        const pageSize = Number(searchParams.get("pageSize") || 10);
+
+        const where: any = {};
+        if (keyword) where.name = { contains: keyword, mode: "insensitive" };
+        if (categoryId && categoryId !== "전체") where.categoryId = categoryId;
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    user: { select: { name: true } },      // 작성자 이름만 가져오기
+                    category: { select: { id: true, name: true } }, // 카테고리 정보
+                },
+                orderBy: { createdAt: "desc" },           // 최신순 정렬
+                skip: (page - 1) * pageSize,             // 페이지 시작 위치
+                take: pageSize,                           // 페이지당 데이터 수
+            }),
+            prisma.product.count({ where }),
+        ]);
+
+        return NextResponse.json({
+            data: products,
+            pagination: {
+                page,
+                pageSize,
+                total,
+                totalPages: Math.ceil(total / pageSize),
             },
         });
-
-        return NextResponse.json(products, { status: 200 });
     } catch (error) {
         console.error("상품 조회 에러:", error);
         return NextResponse.json({ message: "서버 에러" }, { status: 500 });
     }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
 

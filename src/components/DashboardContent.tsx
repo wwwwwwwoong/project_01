@@ -2,6 +2,7 @@
 "use client";
 
 import { useDashboard } from "@/hooks/useDashboard";
+import Link from "next/link";
 
 export default function DashboardContent() {
     const { session, status, handleSignOut } = useDashboard();
@@ -23,7 +24,7 @@ export default function DashboardContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-3xl bg-gray-50 p-8">
             <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
                 <h1 className="text-2xl font-bold mb-4">
                     {session.user?.name ?? "회원"}님, 환영합니다!
@@ -37,6 +38,14 @@ export default function DashboardContent() {
                     >
                         로그아웃
                     </button>
+                </div>
+                <div className="mb-6 text-right">
+                    <Link
+                        href="/products/new"
+                        className="bg-black text-white py-2 px-4 rounded hover:bg-gray-800"
+                    >
+                        상품 등록
+                    </Link>
                 </div>
             </div>
         </div>

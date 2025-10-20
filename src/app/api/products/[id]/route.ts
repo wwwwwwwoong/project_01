@@ -1,13 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // GET: 단일 상품 조회 (로그인 없이 접근 가능)
-export async function GET(req: Request, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { params } = context;
-        const { id } = params;
+        const { id } = await context.params;
 
         const product = await prisma.product.findUnique({
             where: { id },
@@ -29,15 +28,14 @@ export async function GET(req: Request, context: { params: { id: string } }) {
 }
 
 // ✅ 2. 상품 수정 (로그인 + 작성자만 가능)
-export async function PUT(req: Request, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
             return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
         }
 
-        const { params } = await context;
-        const { id } = params;
+        const { id } = await context.params;
 
         const product = await prisma.product.findUnique({ where: { id } });
         if (!product) {
@@ -78,16 +76,16 @@ export async function PUT(req: Request, context: { params: { id: string } }) {
 
 
 // DELETE: 단일 상품 삭제 (로그인 + 작성자 체크)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
             return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
         }
 
-        const { id } = params;
-        const product = await prisma.product.findUnique({ where: { id } });
+        const { id } = await context.params; // ✅ 여기서 await
 
+        const product = await prisma.product.findUnique({ where: { id } });
         if (!product) {
             return NextResponse.json({ message: "상품을 찾을 수 없습니다." }, { status: 404 });
         }
